@@ -1,3 +1,6 @@
 name: TeamVsTeam
 version: '${project.version}'
 main: me.bobiyam.teamvsteam.TeamVsTeam
+api-version: 1.8.9
+author: BobiYam
+description: Automated PvP system for Team vs Team events
