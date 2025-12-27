@@ -8,9 +8,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import java.sql.*;
 
 import java.io.File;
+import java.sql.*;
 import java.util.*;
 
 public final class TeamVsTeam extends JavaPlugin {
@@ -21,17 +21,16 @@ public final class TeamVsTeam extends JavaPlugin {
     private List<ChatColor> teamColors;
     private FileConfiguration messages;
     private Connection connection;
-    private final String dbFile = "teamvsteam.db"; // файл на SQLite
+    private final String dbFile = "teamvsteam.db";
 
     @Override
     public void onEnable() {
-        // Зареждане на config.yml
         saveDefaultConfig();
         reloadConfig();
 
         getServer().getPluginManager().registerEvents(new TeamListener(this), this);
 
-        // Зареждане на имена и цветове на отбори
+        // Четене на имена и цветове
         teamNames = getConfig().getStringList("teams.default-names");
         List<String> colors = getConfig().getStringList("teams.default-colors");
         teamColors = new ArrayList<>();
@@ -47,89 +46,16 @@ public final class TeamVsTeam extends JavaPlugin {
         loadQueue();
         loadTeams();
 
-        // Зареждане на messages.yml
-        saveResource("messages.yml", false); // създава файла, ако не съществува
+        saveResource("messages.yml", false);
         messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
 
         getLogger().info("TeamVsTeam plugin е активиран!");
     }
 
-
     @Override
     public void onDisable() {
         getLogger().info("TeamVsTeam plugin е деактивиран!");
-    }
-    private void loadQueue() {
-        try {
-            PreparedStatement ps = connection.prepareStatement("SELECT player FROM queue");
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Player p = Bukkit.getPlayer(UUID.fromString(rs.getString("player")));
-                if (p != null) queue.add(p);
-            }
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void loadTeams() {
-        try {
-            PreparedStatement ps = connection.prepareStatement("SELECT team_name, player FROM teams");
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                String teamName = rs.getString("team_name");
-                UUID playerUUID = UUID.fromString(rs.getString("player"));
-                Player p = Bukkit.getPlayer(playerUUID);
-
-                if (p != null) {
-                    teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(p);
-                }
-            }
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addToQueue(Player player) {
-        queue.add(player);
-        try {
-            PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO queue(player) VALUES(?)");
-            ps.setString(1, player.getUniqueId().toString());
-            ps.executeUpdate();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addToTeam(String teamName, Player player) {
-        teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(player);
-        try {
-            PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO teams(team_name, player) VALUES(?, ?)");
-            ps.setString(1, teamName);
-            ps.setString(2, player.getUniqueId().toString());
-            ps.executeUpdate();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void clearQueueAndTeams() {
-        queue.clear();
-        teams.clear();
-        try {
-            Statement stmt = connection.createStatement();
-            stmt.executeUpdate("DELETE FROM queue");
-            stmt.executeUpdate("DELETE FROM teams");
-            stmt.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        try { if (connection != null) connection.close(); } catch (SQLException ignored) {}
     }
 
     public Map<String, List<Player>> getTeams() {
@@ -138,9 +64,7 @@ public final class TeamVsTeam extends JavaPlugin {
 
     public String getPlayerTeam(Player player) {
         for (String teamName : teams.keySet()) {
-            if (teams.get(teamName).contains(player)) {
-                return teamName;
-            }
+            if (teams.get(teamName).contains(player)) return teamName;
         }
         return null;
     }
@@ -160,7 +84,6 @@ public final class TeamVsTeam extends JavaPlugin {
         }
 
         String subcommand = args[0].toLowerCase();
-
         switch (subcommand) {
             case "join":
                 if (!player.hasPermission("teamvsteam.join")) {
@@ -202,127 +125,173 @@ public final class TeamVsTeam extends JavaPlugin {
             default:
                 player.sendMessage(ChatColor.RED + "Невалидна подкоманда.");
         }
-
         return true;
     }
 
     private void setupDatabase() {
         try {
+            Class.forName("org.sqlite.JDBC");
             File dataFolder = getDataFolder();
             if (!dataFolder.exists()) dataFolder.mkdirs();
-
             connection = DriverManager.getConnection("jdbc:sqlite:" + new File(dataFolder, dbFile));
+
             Statement stmt = connection.createStatement();
-
-            // Таблица за queue
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS queue (" +
-                    "player VARCHAR(36) PRIMARY KEY)");
-
-            // Таблица за teams
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS teams (" +
-                    "team_name VARCHAR(50), " +
-                    "player VARCHAR(36), " +
-                    "PRIMARY KEY(team_name, player))");
-
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS queue (player VARCHAR(36) PRIMARY KEY)");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS teams (team_name VARCHAR(50), player VARCHAR(36), PRIMARY KEY(team_name, player))");
             stmt.close();
+        } catch (ClassNotFoundException e) {
+            getLogger().severe("SQLite драйверът не е намерен!");
         } catch (SQLException e) {
             e.printStackTrace();
             getLogger().severe("Не можа да се създаде базата данни!");
         }
     }
 
+    private void loadQueue() {
+        try {
+            if (connection == null) return;
+            PreparedStatement ps = connection.prepareStatement("SELECT player FROM queue");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Player p = Bukkit.getPlayer(UUID.fromString(rs.getString("player")));
+                if (p != null) queue.add(p);
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void loadTeams() {
+        try {
+            if (connection == null) return;
+            PreparedStatement ps = connection.prepareStatement("SELECT team_name, player FROM teams");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String teamName = rs.getString("team_name");
+                UUID playerUUID = UUID.fromString(rs.getString("player"));
+                Player p = Bukkit.getPlayer(playerUUID);
+                if (p != null) teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(p);
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void addToQueue(Player player) {
+        queue.add(player);
+        try {
+            PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO queue(player) VALUES(?)");
+            ps.setString(1, player.getUniqueId().toString());
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void addToTeam(String teamName, Player player) {
+        teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(player);
+        try {
+            PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO teams(team_name, player) VALUES(?, ?)");
+            ps.setString(1, teamName);
+            ps.setString(2, player.getUniqueId().toString());
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void clearQueueAndTeams() {
+        queue.clear();
+        teams.clear();
+        try {
+            Statement stmt = connection.createStatement();
+            stmt.executeUpdate("DELETE FROM queue");
+            stmt.executeUpdate("DELETE FROM teams");
+            stmt.close();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
     private void sendHelpMessage(Player player) {
         player.sendMessage(ChatColor.GOLD + "==============================");
         player.sendMessage(ChatColor.AQUA + "      TEAM vs TEAM HELP       ");
         player.sendMessage(ChatColor.GOLD + "==============================");
-
-        player.sendMessage(ChatColor.YELLOW + "/team join" + ChatColor.WHITE + " - Join the current queue");
+        player.sendMessage(ChatColor.YELLOW + "/team join" + ChatColor.WHITE + " - Join a random team in the queue");
         player.sendMessage(ChatColor.YELLOW + "/team create <number>" + ChatColor.WHITE + " - Create teams (Admin only)");
         player.sendMessage(ChatColor.YELLOW + "/team match" + ChatColor.WHITE + " - Start the match (Admin only)");
         player.sendMessage(ChatColor.YELLOW + "/team help" + ChatColor.WHITE + " - Show this help message");
-
         player.sendMessage(ChatColor.GOLD + "==============================");
     }
 
+    public String getMessage(String path) {
+        return ChatColor.translateAlternateColorCodes('&', messages.getString(path, "Съобщението не е зададено."));
+    }
+
     private void handleJoin(Player player) {
-        // Проверка дали вече има създадени отбори
         if (teams.isEmpty()) {
             player.sendMessage(getMessage("errors.no-teams-created"));
             return;
         }
-
-        // Проверка дали играчът вече е в опашката
         if (queue.contains(player)) {
             player.sendMessage(getMessage("queue.already-in-queue"));
             return;
         }
 
-        queue.add(player);
-        player.sendMessage(getMessage("queue.join-success"));
+        // Поставяне в рандомен отбор
+        List<String> keys = new ArrayList<>(teams.keySet());
+        String teamName = keys.get(new Random().nextInt(keys.size()));
+        addToTeam(teamName, player);
+        addToQueue(player);
+        player.sendMessage(getMessage("teams.team-name")
+                .replace("{team_name}", teamName)
+                .replace("{team_color}", ChatColor.GREEN.name()));
     }
 
     private void handleCreateTeams(int numTeams) {
         if (queue.isEmpty()) {
-            Bukkit.getServer().broadcastMessage(getMessage("errors.not-enough-players"));
+            Bukkit.broadcastMessage(getMessage("errors.not-enough-players"));
             return;
         }
 
         teams.clear();
+        List<Player> shuffledPlayers = new ArrayList<>(queue);
+        Collections.shuffle(shuffledPlayers);
 
-        // Инициализация на отборите
         for (int i = 0; i < numTeams; i++) {
             String teamName = i < teamNames.size() ? teamNames.get(i) : "Team" + (i + 1);
             teams.put(teamName, new ArrayList<>());
         }
 
-        // Разбъркване на играчите за случайност
-        List<Player> shuffledPlayers = new ArrayList<>(queue);
-        Collections.shuffle(shuffledPlayers);
-
-        // Изчисляваме колко играчи на отбор
         int totalPlayers = shuffledPlayers.size();
-        int basePlayersPerTeam = totalPlayers / numTeams; // минимален брой на отбор
-        int extraPlayers = totalPlayers % numTeams;       // оставащи играчи
-
+        int base = totalPlayers / numTeams;
+        int extra = totalPlayers % numTeams;
         Iterator<Player> it = shuffledPlayers.iterator();
-        List<String> teamKeys = new ArrayList<>(teams.keySet());
+        List<String> keys = new ArrayList<>(teams.keySet());
 
         for (int i = 0; i < numTeams; i++) {
-            int playersInThisTeam = basePlayersPerTeam + (i < extraPlayers ? 1 : 0);
-            List<Player> currentTeam = teams.get(teamKeys.get(i));
-
-            for (int j = 0; j < playersInThisTeam && it.hasNext(); j++) {
-                currentTeam.add(it.next());
-            }
+            int count = base + (i < extra ? 1 : 0);
+            List<Player> t = teams.get(keys.get(i));
+            for (int j = 0; j < count && it.hasNext(); j++) t.add(it.next());
         }
 
-        // Изпращане на съобщения на играчите
         int colorIndex = 0;
-        for (String teamName : teams.keySet()) {
+        for (String tName : teams.keySet()) {
             ChatColor color = teamColors.get(colorIndex % teamColors.size());
-            for (Player p : teams.get(teamName)) {
+            for (Player p : teams.get(tName)) {
                 p.sendMessage(getMessage("teams.team-name")
-                        .replace("{team_name}", teamName)
+                        .replace("{team_name}", tName)
                         .replace("{team_color}", color.name()));
             }
             colorIndex++;
         }
 
-        Bukkit.getServer().broadcastMessage(getMessage("teams.created")
+        Bukkit.broadcastMessage(getMessage("teams.created")
                 .replace("{number_of_teams}", String.valueOf(numTeams)));
     }
 
     private void handleStartMatch() {
         if (queue.isEmpty()) {
-            Bukkit.getServer().broadcastMessage(getMessage("errors.not-enough-players"));
+            Bukkit.broadcastMessage(getMessage("errors.not-enough-players"));
             return;
         }
-        Bukkit.getServer().broadcastMessage(getMessage("match.started"));
-        queue.clear();
-    }
-
-    private String getMessage(String path) {
-        return ChatColor.translateAlternateColorCodes('&',
-                messages.getString(path, "Съобщението не е зададено."));
+        Bukkit.broadcastMessage(getMessage("match.started"));
+        clearQueueAndTeams();
     }
 }

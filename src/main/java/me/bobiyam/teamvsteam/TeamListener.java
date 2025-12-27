@@ -19,18 +19,14 @@ public class TeamListener implements Listener {
 
     @EventHandler
     public void onPlayerDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player)) return;
-        if (!(event.getDamager() instanceof Player)) return;
-
+        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player)) return;
         Player damaged = (Player) event.getEntity();
         Player damager = (Player) event.getDamager();
 
         Map<String, List<Player>> teams = plugin.getTeams();
-
         String damagedTeam = plugin.getPlayerTeam(damaged);
         String damagerTeam = plugin.getPlayerTeam(damager);
 
-        // Ако са в един и същи отбор → блокирай
         if (damagedTeam != null && damagedTeam.equals(damagerTeam)) {
             event.setCancelled(true);
             damager.sendMessage(ChatColor.RED + "Не можеш да удряш съотборник!");
