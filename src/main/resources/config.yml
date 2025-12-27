@@ -1,0 +1,32 @@
+# Team vs Team system settings
+
+queue:
+  max-players: 100 # Maximum number of players in the queue
+
+teams:
+  default-colors:
+    - RED
+    - BLUE
+    - GREEN
+    - YELLOW
+    - PURPLE
+    - ORANGE
+  default-names:
+    - "Alpha"
+    - "Bravo"
+    - "Charlie"
+    - "Delta"
+    - "Echo"
+    - "Foxtrot"
+
+match:
+  auto-assign: true # Automatic player allocation
+  balance-teams: true # Balancing teams by number
+  min-players-per-team: 1 # Minimum number of players per team
+
+messages:
+  join-success: "You have successfully joined the queue for Team vs Team!"
+  already-in-queue: "You are now in the queue!"
+  match-started: "The distribution of players has begun! We wish you success!"
+  not-enough-players: "There are not enough players to create a match."
+  team-assigned: "You are on the team {team_name} with color {team_color}."
