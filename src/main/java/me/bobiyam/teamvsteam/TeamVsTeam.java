@@ -242,6 +242,7 @@ public final class TeamVsTeam extends JavaPlugin {
 
     private void addToTeam(String teamName, Player player) {
         teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(player);
+        logPlayerJoinTeam(teamName, player); // <-- лог
         try {
             PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO teams(team_name, player) VALUES(?, ?)");
             ps.setString(1, teamName);
