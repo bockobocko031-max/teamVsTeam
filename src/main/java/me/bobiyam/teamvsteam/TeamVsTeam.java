@@ -26,6 +26,7 @@ public final class TeamVsTeam extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        showCustomStartupMessage();
         reloadConfig();
 
         getServer().getPluginManager().registerEvents(new TeamListener(this), this);
@@ -67,6 +68,26 @@ public final class TeamVsTeam extends JavaPlugin {
             if (teams.get(teamName).contains(player)) return teamName;
         }
         return null;
+    }
+
+    private void showCustomStartupMessage() {
+        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "\n" +
+                ChatColor.RED + "  ████████╗███████╗ ██████╗ ██████╗  █████╗ ███╗   ██╗\n" +
+                ChatColor.GOLD + "  ╚══██╔══╝██╔════╝██╔═══██╗██╔══██╗██╔══██╗████╗  ██║\n" +
+                ChatColor.YELLOW + "     ██║   █████╗  ██║   ██║██████╔╝███████║██╔██╗ ██║\n" +
+                ChatColor.BLUE + "     ██║   ██╔══╝  ██║   ██║██╔══██╗██╔══██║██║╚██╗██║\n" +
+                ChatColor.AQUA + "     ██║   ███████╗╚██████╔╝██║  ██║██║  ██║██║ ╚████║\n" +
+                ChatColor.DARK_AQUA + "     ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\n" +
+                ChatColor.LIGHT_PURPLE + "  ✦ The Ultimate TeamVsTeam Plugin ✦ \n" +
+                ChatColor.GOLD + "  Developed by: BobiYam & PvPBulgaria\n" +
+                ChatColor.YELLOW + "  ✧ Version: 2.0 | Fully Compatible with 1.8 - 1.20.x ✧\n" +
+                ChatColor.DARK_GREEN + "  ⚡ Optimized for Performance & Stability ⚡\n" +
+                ChatColor.GREEN + "  🌍 Official Website: https://pvpbulgaria.eu/\n" +
+                ChatColor.BLUE + "  💬 Join our Discord: https://discord.gg/pvpbulgaria\n" +
+                ChatColor.DARK_PURPLE + "  🔄 Check Updates & Changelog on our website!\n" +
+                ChatColor.GRAY + "  ----------------------------------------------\n" +
+                ChatColor.DARK_RED + "  ⭐ Thank you for using TeamVsTeam Plugin! ⭐\n");
+
     }
 
     @Override
