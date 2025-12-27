@@ -188,6 +188,33 @@ public final class TeamVsTeam extends JavaPlugin {
         }
     }
 
+    private void handleDisband(Player admin) {
+        if (teams.isEmpty() && queue.isEmpty()) {
+            admin.sendMessage(ChatColor.RED + "Няма активни отбори или опашка за разпускане!");
+            return;
+        }
+
+        // Изпращаме съобщение на всички участници
+        for (String teamName : teams.keySet()) {
+            for (Player p : teams.get(teamName)) {
+                p.sendMessage(ChatColor.RED + "Отборите бяха разпуснати от " + admin.getName() + "!");
+            }
+        }
+
+        for (Player p : queue) {
+            p.sendMessage(ChatColor.RED + "Опашката беше разпусната от " + admin.getName() + "!");
+        }
+
+        // Изчистване на структурата в паметта
+        teams.clear();
+        queue.clear();
+
+        // Изчистване на базата данни
+        clearQueueAndTeams();
+
+        admin.sendMessage(ChatColor.GREEN + "Всички отбори и опашки бяха разпуснати успешно!");
+    }
+
     private void loadQueue() {
         try {
             if (connection == null) return;
