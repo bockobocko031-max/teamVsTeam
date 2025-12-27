@@ -28,6 +28,11 @@ commands:
         usage: /team match
         permission: teamvsteam.match
         permission-message: "Only administrators can start a match."
+      kick:
+        description: Player kick in team
+        usage: /team kick
+        permission: teamvsteam.kick
+        permission-message: "You don't have perms for use this command"
 
 permissions:
   teamvsteam.use:
@@ -41,4 +46,7 @@ permissions:
     default: op
   teamvsteam.match:
     description: Allows starting a match (administrators)
+    default: op
+  teamvsteam.kick:
+    description: Player kick in team
     default: op
