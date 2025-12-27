@@ -22,6 +22,8 @@ public final class TeamVsTeam extends JavaPlugin {
     private FileConfiguration messages;
     private Connection connection;
     private final String dbFile = "teamvsteam.db";
+    private FileConfiguration teamLogs;
+    private File teamLogsFile;
 
     @Override
     public void onEnable() {
