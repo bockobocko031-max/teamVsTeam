@@ -221,7 +221,10 @@ public final class TeamVsTeam extends JavaPlugin {
     }
 
     public String getMessage(String path) {
-        return ChatColor.translateAlternateColorCodes('&', messages.getString(path, "Съобщението не е зададено."));
+        String msg = messages.getString(path, "Съобщението не е зададено.");
+        String prefix = messages.getString("prefix", "&6[TEAMvsTEAM]&r");
+        msg = msg.replace("{prefix}", ChatColor.translateAlternateColorCodes('&', prefix));
+        return ChatColor.translateAlternateColorCodes('&', msg);
     }
 
     private void handleJoin(Player player) {
