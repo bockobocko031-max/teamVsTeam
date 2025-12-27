@@ -294,4 +294,31 @@ public final class TeamVsTeam extends JavaPlugin {
         Bukkit.broadcastMessage(getMessage("match.started"));
         clearQueueAndTeams();
     }
+
+    public List<Player> getQueue() {
+        return queue;
+    }
+
+    public void removeFromQueueDatabase(Player player) {
+        try {
+            PreparedStatement ps = connection.prepareStatement("DELETE FROM queue WHERE player = ?");
+            ps.setString(1, player.getUniqueId().toString());
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void removeFromTeamDatabase(String teamName, Player player) {
+        try {
+            PreparedStatement ps = connection.prepareStatement("DELETE FROM teams WHERE team_name = ? AND player = ?");
+            ps.setString(1, teamName);
+            ps.setString(2, player.getUniqueId().toString());
+            ps.executeUpdate();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

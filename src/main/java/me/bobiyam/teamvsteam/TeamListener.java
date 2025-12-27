@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -18,18 +19,24 @@ public class TeamListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player)) return;
-        Player damaged = (Player) event.getEntity();
-        Player damager = (Player) event.getDamager();
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
 
-        Map<String, List<Player>> teams = plugin.getTeams();
-        String damagedTeam = plugin.getPlayerTeam(damaged);
-        String damagerTeam = plugin.getPlayerTeam(damager);
+        // Премахване от опашката
+        plugin.getQueue().remove(player);
+        plugin.removeFromQueueDatabase(player);
 
-        if (damagedTeam != null && damagedTeam.equals(damagerTeam)) {
-            event.setCancelled(true);
-            damager.sendMessage(ChatColor.RED + "Не можеш да удряш съотборник!");
+        // Премахване от отбора
+        String team = plugin.getPlayerTeam(player);
+        if (team != null) {
+            plugin.getTeams().get(team).remove(player);
+            plugin.removeFromTeamDatabase(team, player);
+            // Изпращане на съобщение на всички
+            plugin.getServer().broadcastMessage(
+                    plugin.getMessage("player.left-team")
+                            .replace("{player}", player.getName())
+                            .replace("{team}", team)
+            );
         }
     }
 }

@@ -18,3 +18,6 @@ teams:
 # Мач
 match:
   started: "The distribution of players has begun! We wish you success!"
+
+player:
+  left-team: "&cThe player {player} has left the server and been removed from the team {team}!"
