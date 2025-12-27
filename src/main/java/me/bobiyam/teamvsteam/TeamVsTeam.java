@@ -24,6 +24,8 @@ public final class TeamVsTeam extends JavaPlugin {
     private final String dbFile = "teamvsteam.db";
     private FileConfiguration teamLogs;
     private File teamLogsFile;
+    private int joinIndex = 0; // ново поле в класа за циклично разпределяне
+
 
     @Override
     public void onEnable() {
@@ -67,10 +69,6 @@ public final class TeamVsTeam extends JavaPlugin {
     public void onDisable() {
         getLogger().info("TeamVsTeam plugin е деактивиран!");
         try { if (connection != null) connection.close(); } catch (SQLException ignored) {}
-    }
-
-    public Map<String, List<Player>> getTeams() {
-        return teams;
     }
 
     public String getPlayerTeam(Player player) {
@@ -318,31 +316,6 @@ public final class TeamVsTeam extends JavaPlugin {
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    private void addToTeam(String teamName, Player player) {
-        teams.computeIfAbsent(teamName, k -> new ArrayList<>()).add(player);
-        logPlayerJoinTeam(teamName, player); // <-- лог
-        try {
-            PreparedStatement ps = connection.prepareStatement("INSERT OR IGNORE INTO teams(team_name, player) VALUES(?, ?)");
-            ps.setString(1, teamName);
-            ps.setString(2, player.getUniqueId().toString());
-            ps.executeUpdate();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void clearQueueAndTeams() {
-        queue.clear();
-        teams.clear();
-        try {
-            Statement stmt = connection.createStatement();
-            stmt.executeUpdate("DELETE FROM queue");
-            stmt.executeUpdate("DELETE FROM teams");
-            stmt.close();
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
     private void sendHelpMessage(Player player) {
         player.sendMessage(ChatColor.GOLD + "==============================");
         player.sendMessage(ChatColor.AQUA + "       TEAM vs TEAM HELP       ");
@@ -370,71 +343,63 @@ public final class TeamVsTeam extends JavaPlugin {
         return ChatColor.translateAlternateColorCodes('&', msg);
     }
 
-    // Играчът join-ва отбор
-    private void handleJoin(Player player) {
-        if (teams.isEmpty()) {
-            // Ако няма създадени отбори, добавяме играча само в queue
-            if (queue.contains(player)) {
-                player.sendMessage(getMessage("queue.already-in-queue"));
-                return;
-            }
-            queue.add(player);
-            player.sendMessage(getMessage("queue.join-success"));
-            return;
-        }
-
-        // Ако вече има създадени отбори, добавяме играча в случаен отбор
-        List<String> keys = new ArrayList<>(teams.keySet());
-        String teamName = keys.get(new Random().nextInt(keys.size()));
-
-        if (teams.get(teamName).contains(player)) {
-            player.sendMessage(ChatColor.RED + "Вече си в този отбор!");
-            return;
-        }
-
-        addToTeam(teamName, player);
-        queue.add(player); // само за справка кой е join-нал
-
-        player.sendMessage(getMessage("teams.team-name")
-                .replace("{team_name}", teamName)
-                .replace("{team_color}", ChatColor.GREEN.name()));
-    }
-
-    // Създаване на празни отбори
+    // --- /team create ---
     private void handleCreateTeams(int numTeams) {
-        if (numTeams <= 0) {
-            Bukkit.broadcastMessage(getMessage("errors.invalid-number-of-teams"));
-            return;
-        }
+        if (numTeams <= 0) return;
 
         teams.clear();
 
         for (int i = 0; i < numTeams; i++) {
             String teamName = i < teamNames.size() ? teamNames.get(i) : "Team" + (i + 1);
-            teams.put(teamName, new ArrayList<>()); // Празен отбор
+            teams.put(teamName, new ArrayList<>()); // празен отбор
         }
 
-        // Изпращаме съобщение само на оператори (OP)
+        // Изпращаме съобщение само на OP
         Bukkit.getOnlinePlayers().stream()
                 .filter(Player::isOp)
                 .forEach(p -> p.sendMessage(getMessage("teams.created")
                         .replace("{number_of_teams}", String.valueOf(numTeams))));
+    }
 
-        // Опционално: показваме имената на отборите само на OP
-        int colorIndex = 0;
-        for (String teamName : teams.keySet()) {
-            ChatColor color = teamColors.get(colorIndex % teamColors.size());
-            Bukkit.getOnlinePlayers().stream()
-                    .filter(Player::isOp)
-                    .forEach(p -> p.sendMessage(getMessage("teams.team-name")
-                            .replace("{team_name}", teamName)
-                            .replace("{team_color}", color.name())));
+    // --- /team join ---
+    private void handleJoin(Player player) {
+        if (teams.isEmpty()) {
+            player.sendMessage(getMessage("errors.no-teams-created"));
+            return;
+        }
 
-            colorIndex++;
+        // Проверка дали вече е в някой отбор
+        for (List<Player> team : teams.values()) {
+            if (team.contains(player)) {
+                player.sendMessage(ChatColor.RED + "You are already in a team!");
+                return;
+            }
+        }
+
+        // Избираме отбора циклично
+        List<String> keys = new ArrayList<>(teams.keySet());
+        String teamName = keys.get(joinIndex % keys.size());
+        joinIndex++;
+
+        addToTeam(teamName, player);
+
+        // Изпращаме съобщение на играча
+        ChatColor color = teamColors.get(keys.indexOf(teamName) % teamColors.size());
+        player.sendMessage(getMessage("teams.team-name")
+                .replace("{team_name}", teamName)
+                .replace("{team_color}", color.name()));
+
+        player.sendMessage(getMessage("queue.join-success"));
+    }
+
+    private void addToTeam(String teamName, Player player) {
+        List<Player> team = teams.get(teamName);
+        if (team != null && !team.contains(player)) {
+            team.add(player);
         }
     }
 
-    // Стартиране на мач само с хора, които са join-нали
+    // --- /team start ---
     private void handleStartMatch() {
         if (queue.isEmpty()) {
             Bukkit.broadcastMessage(getMessage("errors.not-enough-players"));
@@ -442,6 +407,21 @@ public final class TeamVsTeam extends JavaPlugin {
         }
         Bukkit.broadcastMessage(getMessage("match.started"));
         clearQueueAndTeams();
+    }
+
+    private void clearQueueAndTeams() {
+        queue.clear();
+        teams.clear();
+        joinIndex = 0;
+    }
+
+    // --- Getter-и ---
+    public List<Player> getQueue() {
+        return queue;
+    }
+
+    public Map<String, List<Player>> getTeams() {
+        return teams;
     }
 
     public void removeFromQueueDatabase(Player player) {
@@ -455,9 +435,6 @@ public final class TeamVsTeam extends JavaPlugin {
         }
     }
 
-    public List<Player> getQueue() {
-        return queue;
-    }
 
     public void removeFromTeamDatabase(String teamName, Player player) {
         teams.getOrDefault(teamName, new ArrayList<>()).remove(player);

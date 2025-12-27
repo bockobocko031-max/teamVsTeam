@@ -15,7 +15,6 @@ queue:
 # Отбори
 teams:
   created: "Teams have been created successfully! Number of teams: {number_of_teams}"
-  team-name: "You are on the team {team_name} with color {team_color}."
 
 # Мач
 match:
