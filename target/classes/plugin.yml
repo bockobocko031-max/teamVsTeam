@@ -1,0 +1,44 @@
+name: TeamVsTeam
+version: '1.0-SNAPSHOT'
+main: me.bobiyam.teamvsteam.TeamVsTeam
+api-version: 1.8.9
+author: BobiYam
+description: Automated PvP system for Team vs Team events
+
+commands:
+  team:
+    description: Basic Command for Team vs Team
+    usage: /team <subcommand>
+    aliases: [tvt]
+    permission: teamvsteam.use
+    permission-message: "You don't have permission for this command"
+    subcommands:
+      join:
+        description: "Includes a player in the Team vs Team queue"
+        usage: /team join
+        permission: teamvsteam.join
+        permission-message: "You are not allowed to join the queue."
+      create:
+        description: "Creates a certain number of teams"
+        usage: /team create <number_of_teams>
+        permission: teamvsteam.create
+        permission-message: "Only administrators can create teams."
+      match:
+        description: Player allocation begins and queue stops
+        usage: /team match
+        permission: teamvsteam.match
+        permission-message: "Only administrators can start a match."
+
+permissions:
+  teamvsteam.use:
+    description: Allows the use of TeamVsTeam commands
+    default: true
+  teamvsteam.join:
+    description: Allows players to join the queue
+    default: true
+  teamvsteam.create:
+    description: Allows creation of teams (administrators)
+    default: op
+  teamvsteam.match:
+    description: Allows starting a match (administrators)
+    default: op
