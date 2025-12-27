@@ -119,6 +119,13 @@ public final class TeamVsTeam extends JavaPlugin {
             case "help":
                 sendHelpMessage(player);
                 break;
+            case "disband":
+                if (!player.isOp()) {
+                    player.sendMessage(getMessage("errors.admin-only"));
+                    return true;
+                }
+                handleDisband(player);
+                break;
 
             case "create":
                 if (!player.hasPermission("teamvsteam.create")) {
