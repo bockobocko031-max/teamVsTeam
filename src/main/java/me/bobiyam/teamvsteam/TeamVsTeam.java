@@ -335,6 +335,8 @@ public final class TeamVsTeam extends JavaPlugin {
     }
 
     public void removeFromTeamDatabase(String teamName, Player player) {
+        teams.getOrDefault(teamName, new ArrayList<>()).remove(player);
+        logPlayerLeaveTeam(teamName, player); // <-- лог
         try {
             PreparedStatement ps = connection.prepareStatement("DELETE FROM teams WHERE team_name = ? AND player = ?");
             ps.setString(1, teamName);
