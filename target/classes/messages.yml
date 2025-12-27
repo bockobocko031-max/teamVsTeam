@@ -1,0 +1,20 @@
+# Общи съобщения
+errors:
+  no-permission: "You do not have permission to use this command."
+  admin-only: "Only admins can use this command."
+  not-enough-players: "There are not enough players to create a match."
+  no-teams-created: "No teams have been created yet! Please wait for an admin to use /team create <number>."
+
+# Опашка
+queue:
+  join-success: "You have successfully joined the queue for Team vs Team!"
+  already-in-queue: "You are already in the queue!"
+
+# Отбори
+teams:
+  created: "Teams have been created successfully! Number of teams: {number_of_teams}"
+  team-name: "You are on the team {team_name} with color {team_color}."
+
+# Мач
+match:
+  started: "The distribution of players has begun! We wish you success!"
