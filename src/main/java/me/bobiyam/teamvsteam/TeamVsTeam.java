@@ -202,6 +202,31 @@ public final class TeamVsTeam extends JavaPlugin {
         }
     }
 
+    private void handleKick(Player admin, String targetName) {
+        Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null) {
+            admin.sendMessage(ChatColor.RED + "Играчът не е онлайн или името е грешно!");
+            return;
+        }
+
+        String teamName = getPlayerTeam(target);
+
+        if (teamName != null) {
+            teams.get(teamName).remove(target);
+            removeFromTeamDatabase(teamName, target);
+            logPlayerLeaveTeam(teamName, target); // ако използваме логове
+            target.sendMessage(ChatColor.RED + "Бяхте изгонен от отбора " + teamName + " от " + admin.getName());
+            admin.sendMessage(ChatColor.GREEN + "Играчът " + target.getName() + " беше премахнат от отбора " + teamName);
+        } else if (queue.contains(target)) {
+            queue.remove(target);
+            removeFromQueueDatabase(target);
+            target.sendMessage(ChatColor.RED + "Бяхте премахнат от опашката от " + admin.getName());
+            admin.sendMessage(ChatColor.GREEN + "Играчът " + target.getName() + " беше премахнат от опашката");
+        } else {
+            admin.sendMessage(ChatColor.RED + "Играчът не е в опашката или в отбор!");
+        }
+    }
+
     private void logPlayerLeaveTeam(String teamName, Player player) {
         String timestamp = java.time.LocalDateTime.now().toString();
         List<String> logList = teamLogs.getStringList(teamName);
