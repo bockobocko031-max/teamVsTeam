@@ -182,6 +182,36 @@ public final class TeamVsTeam extends JavaPlugin {
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
+    private void loadTeamLogs() {
+        teamLogsFile = new File(getDataFolder(), "team-logs.yml");
+        if (!teamLogsFile.exists()) saveResource("team-logs.yml", false);
+        teamLogs = YamlConfiguration.loadConfiguration(teamLogsFile);
+    }
+
+    private void logPlayerJoinTeam(String teamName, Player player) {
+        String timestamp = java.time.LocalDateTime.now().toString();
+        List<String> logList = teamLogs.getStringList(teamName);
+        logList.add(timestamp + " - " + player.getName());
+        teamLogs.set(teamName, logList);
+        try {
+            teamLogs.save(teamLogsFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void logPlayerLeaveTeam(String teamName, Player player) {
+        String timestamp = java.time.LocalDateTime.now().toString();
+        List<String> logList = teamLogs.getStringList(teamName);
+        logList.add(timestamp + " - LEFT - " + player.getName());
+        teamLogs.set(teamName, logList);
+        try {
+            teamLogs.save(teamLogsFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void loadTeams() {
         try {
             if (connection == null) return;
