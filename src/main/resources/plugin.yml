@@ -1,0 +1,3 @@
+name: TeamVsTeam
+version: '${project.version}'
+main: me.bobiyam.teamvsteam.TeamVsTeam
