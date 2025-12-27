@@ -136,6 +136,17 @@ public final class TeamVsTeam extends JavaPlugin {
                     player.sendMessage(ChatColor.RED + "Невалидно число!");
                 }
                 break;
+            case "kick":
+                if (!player.isOp()) {
+                    player.sendMessage(getMessage("errors.admin-only"));
+                    return true;
+                }
+                if (args.length < 2) {
+                    player.sendMessage(ChatColor.RED + "Моля, въведете името на играча: /team kick <играч>");
+                    return true;
+                }
+                handleKick(player, args[1]);
+                break;
 
             case "match":
                 if (!player.hasPermission("teamvsteam.match")) {
