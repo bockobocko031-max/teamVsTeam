@@ -248,7 +248,9 @@ public final class TeamVsTeam extends JavaPlugin {
             ps.setString(2, player.getUniqueId().toString());
             ps.executeUpdate();
             ps.close();
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void clearQueueAndTeams() {
