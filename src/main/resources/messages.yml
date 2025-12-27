@@ -5,7 +5,7 @@ errors:
   no-permission: "You do not have permission to use this command."
   admin-only: "Only admins can use this command."
   not-enough-players: "There are not enough players to create a match."
-  no-teams-created: "No teams have been created yet! Please wait for an admin to use /team create <number>."
+  no-teams-created: "No teams have been created yet! Please wait for an admin"
 
 # Опашка
 queue:
