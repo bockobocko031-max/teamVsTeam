@@ -9,8 +9,8 @@ teams:
     - BLUE
     - GREEN
     - YELLOW
-    - PURPLE
-    - ORANGE
+    - DARK_RED
+    - DARK_GRAY
   default-names:
     - "Alpha"
     - "Bravo"
