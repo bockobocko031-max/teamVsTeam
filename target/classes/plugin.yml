@@ -1,5 +1,5 @@
 name: TeamVsTeam
-version: '1.0-SNAPSHOT'
+version: '1.0'
 main: me.bobiyam.teamvsteam.TeamVsTeam
 api-version: 1.8.9
 author: BobiYam
