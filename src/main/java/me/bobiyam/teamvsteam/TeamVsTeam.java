@@ -27,7 +27,7 @@ public final class TeamVsTeam extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-//        showCustomStartupMessage();
+        showCustomStartupMessage();
         reloadConfig();
 
         getServer().getPluginManager().registerEvents(new TeamListener(this), this);
@@ -83,24 +83,24 @@ public final class TeamVsTeam extends JavaPlugin {
         return null;
     }
 
-//    private void showCustomStartupMessage() {
-//        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "\n" +
-//                ChatColor.RED + "  ████████╗███████╗ ██████╗ ██████╗  █████╗ ███╗   ██╗\n" +
-//                ChatColor.GOLD + "  ╚══██╔══╝██╔════╝██╔═══██╗██╔══██╗██╔══██╗████╗  ██║\n" +
-//                ChatColor.YELLOW + "     ██║   █████╗  ██║   ██║██████╔╝███████║██╔██╗ ██║\n" +
-//                ChatColor.BLUE + "     ██║   ██╔══╝  ██║   ██║██╔══██╗██╔══██║██║╚██╗██║\n" +
-//                ChatColor.AQUA + "     ██║   ███████╗╚██████╔╝██║  ██║██║  ██║██║ ╚████║\n" +
-//                ChatColor.DARK_AQUA + "     ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\n" +
-//                ChatColor.LIGHT_PURPLE + "  ✦ The Ultimate TeamVsTeam Plugin ✦ \n" +
-//                ChatColor.GOLD + "  Developed by: BobiYam & PvPBulgaria\n" +
-//                ChatColor.YELLOW + "  ✧ Version: 2.0 | Fully Compatible with 1.8 - 1.20.x ✧\n" +
-//                ChatColor.DARK_GREEN + "  ⚡ Optimized for Performance & Stability ⚡\n" +
-//                ChatColor.GREEN + "  🌍 Official Website: https://pvpbulgaria.eu/\n" +
-//                ChatColor.BLUE + "  💬 Join our Discord: https://discord.gg/pvpbulgaria\n" +
-//                ChatColor.DARK_PURPLE + "  🔄 Check Updates & Changelog on our website!\n" +
-//                ChatColor.GRAY + "  ----------------------------------------------\n" +
-//                ChatColor.DARK_RED + "  ⭐ Thank you for using TeamVsTeam Plugin! ⭐\n");
-//    }
+    private void showCustomStartupMessage() {
+        Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "\n" +
+                ChatColor.RED + "  ████████╗███████╗ ██████╗ ██████╗  █████╗ ███╗   ██╗\n" +
+                ChatColor.GOLD + "  ╚══██╔══╝██╔════╝██╔═══██╗██╔══██╗██╔══██╗████╗  ██║\n" +
+                ChatColor.YELLOW + "     ██║   █████╗  ██║   ██║██████╔╝███████║██╔██╗ ██║\n" +
+                ChatColor.BLUE + "     ██║   ██╔══╝  ██║   ██║██╔══██╗██╔══██║██║╚██╗██║\n" +
+                ChatColor.AQUA + "     ██║   ███████╗╚██████╔╝██║  ██║██║  ██║██║ ╚████║\n" +
+                ChatColor.DARK_AQUA + "     ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\n" +
+                ChatColor.LIGHT_PURPLE + "  ✦ The Ultimate TeamVsTeam Plugin ✦ \n" +
+                ChatColor.GOLD + "  Developed by: BobiYam & PvPBulgaria\n" +
+                ChatColor.YELLOW + "  ✧ Version: 2.0 | Fully Compatible with 1.8 - 1.20.x ✧\n" +
+                ChatColor.DARK_GREEN + "  ⚡ Optimized for Performance & Stability ⚡\n" +
+                ChatColor.GREEN + "  🌍 Official Website: https://pvpbulgaria.eu/\n" +
+                ChatColor.BLUE + "  💬 Join our Discord: https://discord.gg/pvpbulgaria\n" +
+                ChatColor.DARK_PURPLE + "  🔄 Check Updates & Changelog on our website!\n" +
+                ChatColor.GRAY + "  ----------------------------------------------\n" +
+                ChatColor.DARK_RED + "  ⭐ Thank you for using TeamVsTeam Plugin! ⭐\n");
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -170,7 +170,7 @@ public final class TeamVsTeam extends JavaPlugin {
                     player.sendMessage(getMessage("errors.admin-only"));
                     return true;
                 }
-                handleStartMatch();
+                handleStartMatch(player);
                 break;
 
             default:
@@ -301,12 +301,18 @@ public final class TeamVsTeam extends JavaPlugin {
         logPlayerJoinTeam(teamName, player);
     }
 
-    private void handleStartMatch() {
+    private void handleStartMatch(Player sender) {
         if (queue.isEmpty()) {
             Bukkit.broadcastMessage(getMessage("errors.not-enough-players"));
             return;
         }
         Bukkit.broadcastMessage(getMessage("match.started"));
+
+        for (Player player : queue) {
+            if (player.isOnline()) {
+                player.teleport(sender.getLocation());
+            }
+        }
         clearQueueAndTeams();
     }
 
