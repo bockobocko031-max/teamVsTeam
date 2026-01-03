@@ -22,7 +22,6 @@ public final class TeamVsTeam extends JavaPlugin {
 
     private FileConfiguration logConfig;
     private File logFile;
-    private int joinIndex = 0; // циклично разпределяне
 
     @Override
     public void onEnable() {
@@ -243,7 +242,12 @@ public final class TeamVsTeam extends JavaPlugin {
     }
 
     private void handleCreateTeams(int numTeams) {
-        if (numTeams <= 0) return;
+        if (numTeams <= 0) {
+            Bukkit.getOnlinePlayers().stream()
+                    .filter(Player::isOp)
+                    .forEach(p -> p.sendMessage(ChatColor.RED + "Невалиден брой отбори!"));
+            return;
+        }
 
         teams.clear();
 
@@ -252,74 +256,92 @@ public final class TeamVsTeam extends JavaPlugin {
             teams.put(teamName, new ArrayList<>());
         }
 
+        // Разпределяне на играчите от опашката между отборите поравномерно
+        if (!queue.isEmpty()) {
+            distributePlayersToTeams();
+        }
+
         Bukkit.getOnlinePlayers().stream()
                 .filter(Player::isOp)
                 .forEach(p -> p.sendMessage(getMessage("teams.created")
                         .replace("{number_of_teams}", String.valueOf(numTeams))));
     }
 
+    private void distributePlayersToTeams() {
+        List<String> teamNamesList = new ArrayList<>(teams.keySet());
+        if (teamNamesList.isEmpty() || queue.isEmpty()) return;
+
+        // Разпределяме играчите циклично между отборите
+        for (int i = 0; i < queue.size(); i++) {
+            Player player = queue.get(i);
+            String teamName = teamNamesList.get(i % teamNamesList.size());
+            teams.get(teamName).add(player);
+            logPlayerJoinTeam(teamName, player);
+
+            // Известяваме играча кой отбор е му назначен
+            ChatColor color = teamColors.get(teamNamesList.indexOf(teamName) % teamColors.size());
+            player.sendMessage(getMessage("teams.team-name")
+                    .replace("{team_name}", teamName)
+                    .replace("{team_color}", color.name()));
+        }
+    }
+
     private void handleJoin(Player player) {
-        if (teams.isEmpty()) {
-            player.sendMessage(getMessage("errors.no-teams-created"));
+        // Проверяваме дали играчът е вече в опашката
+        if (queue.contains(player)) {
+            player.sendMessage(getMessage("queue.already-in-queue"));
             return;
         }
 
+        // Проверяваме дали играчът е вече в някой отбор
         for (List<Player> team : teams.values()) {
             if (team.contains(player)) {
-                player.sendMessage(ChatColor.RED + "You are already in a team!");
+                player.sendMessage(ChatColor.RED + "Вие сте вече в отбор!");
                 return;
             }
         }
 
-        List<String> keys = new ArrayList<>(teams.keySet());
-        String teamName = keys.get(joinIndex % keys.size());
-        joinIndex++;
+        // Добавяме играча в опашката
+        queue.add(player);
 
-        addToTeam(teamName, player);
+        // Запазваме в базата
+        List<String> queueList = logConfig.getStringList("queue");
+        queueList.add(player.getUniqueId().toString());
+        logConfig.set("queue", queueList);
+        saveLogFile();
 
-        ChatColor color = teamColors.get(keys.indexOf(teamName) % teamColors.size());
-        player.sendMessage(getMessage("teams.team-name")
-                .replace("{team_name}", teamName)
-                .replace("{team_color}", color.name()));
 
         player.sendMessage(getMessage("queue.join-success"));
     }
 
-    private void addToTeam(String teamName, Player player) {
-        List<Player> team = teams.get(teamName);
-        if (team != null && !team.contains(player)) {
-            team.add(player);
-        }
-
-        List<String> teamList = logConfig.getStringList("teams." + teamName);
-        if (!teamList.contains(player.getUniqueId().toString())) {
-            teamList.add(player.getUniqueId().toString());
-        }
-        logConfig.set("teams." + teamName, teamList);
-        saveLogFile();
-
-        logPlayerJoinTeam(teamName, player);
-    }
-
     private void handleStartMatch(Player sender) {
-        if (queue.isEmpty()) {
+        if (queue.isEmpty() && teams.isEmpty()) {
             Bukkit.broadcastMessage(getMessage("errors.not-enough-players"));
             return;
         }
+
         Bukkit.broadcastMessage(getMessage("match.started"));
 
-        for (Player player : queue) {
-            if (player.isOnline()) {
-                player.teleport(sender.getLocation());
+        // Телепортираме всички играчи от отборите до локацията
+        for (List<Player> team : teams.values()) {
+            for (Player player : team) {
+                if (player.isOnline()) {
+                    player.teleport(sender.getLocation());
+                }
             }
         }
-        clearQueueAndTeams();
+
+        // Очистваме опашката след започване на мача
+        queue.clear();
+        List<String> queueList = logConfig.getStringList("queue");
+        queueList.clear();
+        logConfig.set("queue", queueList);
+        saveLogFile();
     }
 
     private void clearQueueAndTeams() {
         queue.clear();
         teams.clear();
-        joinIndex = 0;
 
         logConfig.set("queue", new ArrayList<>());
         logConfig.set("teams", new LinkedHashMap<>());
